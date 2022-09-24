@@ -60,21 +60,42 @@ public class ViewPeerActivity extends FragmentActivity implements LoaderManager.
         }
 
         // TODO Set the fields of the UI
+        TextView userName = findViewById(R.id.view_user_name);
+        TextView lastSeen = findViewById(R.id.view_timestamp);
+        TextView location = findViewById(R.id.view_location);
+
+        userName.setText( getString(R.string.view_user_name, peer.name)  );
+        lastSeen.setText( getString(R.string.view_timestamp, formatTimestamp(peer.timestamp))  );
+        location.setText( getString(R.string.view_location, peer.latitude,peer.longitude)  );
+
 
 
         // TODO use SimpleCursorAdapter (with flags=0 and null initial cursor) to display the messages received.
         // You can use android.R.simple_list_item_1 as layout for each row.
+        String[] from = new String[] { MessageContract.MESSAGE_TEXT       };
+        //this used to have "android.R" but why would we lookin android resources to find our XML element
+        //in R.layout.message?
+        //got this from googling the name of the textview on the android.R.layout.simple_list_item_1
+        int[] to = new int[] { android.R.id.text1};
 
+        messagesAdapter = new SimpleCursorAdapter(this, android.R.layout.simple_list_item_1, null, from, to, 0);
+
+        messageList = findViewById(R.id.message_list);
+        messageList.setAdapter(messagesAdapter);
 
         // TODO Use loader manager to initiate a query of the database
         // Make sure to use the Jetpack library, not the deprecated core implementation.
-
+        LoaderManager.getInstance(this).initLoader(LOADER_ID, null, this);
     }
+
+
 
     private static String formatTimestamp(Date timestamp) {
         LocalDateTime dateTime = timestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
         return dateTime.format(formatter);
+        //SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        //return sdf.format(timestamp);
     }
 
     @NonNull
@@ -85,7 +106,7 @@ public class ViewPeerActivity extends FragmentActivity implements LoaderManager.
                 String selection = (MessageContract.SENDER + "=?");
                 String[] selectionArgs = { peer.name };
                 // TODO use a CursorLoader to initiate a query on the database
-                return null;
+                return new CursorLoader(this, MessageContract.CONTENT_URI, new String[]{"_id", MessageContract.SENDER,  MessageContract.MESSAGE_TEXT  },selection,selectionArgs,null);
 
             default:
                 throw new IllegalStateException(("Unexpected loader id: " + id));
@@ -95,12 +116,12 @@ public class ViewPeerActivity extends FragmentActivity implements LoaderManager.
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
         // TODO populate the UI with the result of querying the provider
-
+        messagesAdapter.swapCursor(data);
     }
 
     @Override
     public void onLoaderReset(@NonNull Loader<Cursor> loader) {
         // TODO reset the UI when the cursor is empty
-
+        messagesAdapter.swapCursor(null);
     }
 }

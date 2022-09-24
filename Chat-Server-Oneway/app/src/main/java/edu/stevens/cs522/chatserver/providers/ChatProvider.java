@@ -84,7 +84,7 @@ public class ChatProvider extends ContentProvider {
                         + PeerContract.LATITUDE + " real, "
                         + PeerContract.LONGITUDE + " real "
                         + ");"
-                + String.format("create unique index peer-name-index on %s(%s);",
+                        + String.format("create unique index peer-name-index on %s(%s);",
                         PEERS_TABLE, PeerContract.NAME);
         private static final String CREATE_MESSAGE_TABLE =
                 "create table " + MESSAGES_TABLE + " ("
@@ -96,16 +96,18 @@ public class ChatProvider extends ContentProvider {
                         + MessageContract.LONGITUDE + " real, "
                         + MessageContract.SENDER + " text not null, "
                         + String.format("foreign key (%s) references %s(%s)",
-                                        MessageContract.SENDER,
-                                        PEERS_TABLE,
-                                        PeerContract.NAME)
+                        MessageContract.SENDER,
+                        PEERS_TABLE,
+                        PeerContract.NAME)
                         + ");"
-                + String.format("create index message-sender-index on %s(%s);",
+                        + String.format("create index message-sender-index on %s(%s);",
                         MESSAGES_TABLE, MessageContract.SENDER);
 
         @Override
         public void onCreate(SQLiteDatabase db) {
             // TODO initialize database tables
+            db.execSQL(CREATE_MESSAGE_TABLE);
+            db.execSQL(CREATE_PEER_TABLE);
 
         }
 
@@ -177,10 +179,26 @@ public class ChatProvider extends ContentProvider {
                  * TODO: Implement this to handle requests to insert a new message.
                  * Make sure to notify any observers of this content!
                  */
-                throw new UnsupportedOperationException("Not yet implemented");
+                /*String selection = MessageContract.CHATROOM + "=?";
+                String[] selectionArgs = new String[]{ values.getAsString(MessageContract.CHATROOM) };
+                Cursor cursor = query(uri, null, selection, selectionArgs, null);
+
+                long peerId;
+                if (cursor.moveToFirst()) {
+                    peerId = PeerContract.getId(cursor);
+                    selection = PeerContract._ID + "=?";
+                    selectionArgs = new String[]{ Long.toString(peerId) };
+                    db.update(PEERS_TABLE, values, selection, selectionArgs);
+                } else {*/
+                long messageID = db.insert(MESSAGES_TABLE, null, values);
+                // }
+                /*
+                 * End by returning the URI for the row (new or not).
+                 */
+                return MessageContract.CONTENT_URI(messageID);
 
 
-                // End TODO
+            // End TODO
 
             case PEERS_ALL_ROWS:
                 /*
@@ -221,20 +239,13 @@ public class ChatProvider extends ContentProvider {
         SQLiteDatabase db = databaseHelper.getReadableDatabase();
         switch (uriMatcher.match(uri)) {
             case MESSAGES_ALL_ROWS:
-                /*
-                 * TODO: Implement this to handle query of all messages.
-                 * Make sure to set this cursor to watch for content updates!
-                 *
-                 * The selection args may filter for messages for a particular peer.
-                 */
-                throw new UnsupportedOperationException("Not yet implemented");
+                return db.query(MESSAGES_TABLE, projection, selection, selectionArgs, null, null, sortOrder);
 
-
-                // End TODO
+            // End TODO
 
             case PEERS_ALL_ROWS:
                 /*
-                  * Query for all peers.
+                 * Query for all peers.
                  */
                 return db.query(PEERS_TABLE, projection, selection, selectionArgs, null, null, sortOrder);
 

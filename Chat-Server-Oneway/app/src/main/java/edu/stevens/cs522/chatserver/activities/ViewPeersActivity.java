@@ -28,6 +28,7 @@ public class ViewPeersActivity extends FragmentActivity implements AdapterView.O
      */
 
     private SimpleCursorAdapter peerAdapter;
+    private ListView peerList;
 
     static final private int LOADER_ID = 2;
 
@@ -38,14 +39,20 @@ public class ViewPeersActivity extends FragmentActivity implements AdapterView.O
 
         // TODO initialize peerAdapter with flags=0 and empty cursor (null)
         // Use android.R.layout.simple_list_item_1 as the layout for each row
+        String[] from = new String[] { PeerContract.NAME       };
+        int[] to = new int[] { android.R.id.text1};
 
+        peerAdapter = new SimpleCursorAdapter(this, android.R.layout.simple_list_item_1, null, from, to, 0);
+        peerList = findViewById(R.id.peer_list);
+        peerList.setAdapter(peerAdapter);
 
 
         // TODO set item click listener to this activity
+        peerList.setOnItemClickListener(this);
 
         // TODO Use loader manager to initiate a query of the database
         // Make sure to use the Jetpack library, not the deprecated core implementation.
-
+        LoaderManager.getInstance(this).initLoader(LOADER_ID, null, this);
     }
 
 
@@ -71,7 +78,7 @@ public class ViewPeersActivity extends FragmentActivity implements AdapterView.O
             case LOADER_ID:
                 // TODO use a CursorLoader to initiate a query on the database
                 // Use PeerContact.CONTENT_URI to specify the content
-                return null;
+                return new CursorLoader(this, PeerContract.CONTENT_URI, new String[]{"_id",PeerContract.NAME, PeerContract.TIMESTAMP,PeerContract.LATITUDE, PeerContract.LONGITUDE},null,null,null);
 
             default:
                 throw new IllegalStateException(("Unexpected ooader id: "+id));
@@ -81,13 +88,14 @@ public class ViewPeersActivity extends FragmentActivity implements AdapterView.O
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         // TODO populate the UI with the result of querying the provider
+        peerAdapter.swapCursor(data);
 
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
         // TODO reset the UI when the cursor is empty
-
+        peerAdapter.swapCursor(null);
     }
 
 }

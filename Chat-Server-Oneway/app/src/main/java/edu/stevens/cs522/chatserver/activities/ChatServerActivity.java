@@ -19,6 +19,7 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.JsonReader;
@@ -119,11 +120,20 @@ public class ChatServerActivity extends FragmentActivity implements OnClickListe
         }
 
         // TODO use SimpleCursorAdapter (with flags=0 and null initial cursor) to display the messages received.
+        String[] from = new String[] { MessageContract.SENDER,
+                MessageContract.MESSAGE_TEXT };
+        //this used to have "android.R" but why would we look in android resources to find our XML element
+        int[] to = new int[] { R.id.sender,
+                R.id.message };
         // Use R.layout.message as layout for each row.
 
+        messagesAdapter = new SimpleCursorAdapter(this, R.layout.message, null, from, to, 0);
+        messageList = findViewById(R.id.message_list);
+        messageList.setAdapter(messagesAdapter);
 
         // TODO bind the button for "next" to this activity as listener
-
+        Button btnNext = findViewById(R.id.next);
+        btnNext.setOnClickListener(this);
 
         // Use loader manager to initiate a query of the database
         LoaderManager.getInstance(this).initLoader(LOADER_ID, null, this);
@@ -226,8 +236,19 @@ public class ChatServerActivity extends FragmentActivity implements OnClickListe
              *
              * For this assignment, OK to do synchronous CP insertion on the main thread.
              */
+            ContentValues newMessage = new ContentValues();
+            message.writeToProvider(newMessage);
+            Uri contentUri = MessageContract.CONTENT_URI;
+            Uri rowUri = resolver.insert(contentUri, newMessage);
 
+            ContentValues newPeer = new ContentValues();
+            peer.writeToProvider(newPeer);
 
+            //get the Peer Contract URI
+            Uri peerContentUri = PeerContract.CONTENT_URI;
+            Uri peerRowUri = resolver.insert(peerContentUri, newPeer);
+
+            LoaderManager.getInstance(this).restartLoader(LOADER_ID, null, this);
 
             /*
              * End TODO
@@ -248,7 +269,8 @@ public class ChatServerActivity extends FragmentActivity implements OnClickListe
         switch (id) {
             case LOADER_ID:
                 // TODO use a CursorLoader to initiate a query on the database for messages
-                return null;
+                return new CursorLoader(this, MessageContract.CONTENT_URI, new String [] {"_id", MessageContract.SENDER,
+                MessageContract.MESSAGE_TEXT},null, null, null);
 
             default:
                 throw new IllegalStateException(("Unexpected loader id: " + id));
@@ -258,13 +280,16 @@ public class ChatServerActivity extends FragmentActivity implements OnClickListe
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
         // TODO populate the UI with the result of querying the provider
+        messagesAdapter.swapCursor(data);
+
+
 
     }
 
-    @Override
+    @Override //https://sit.instructure.com/courses/61371/pages/w3-sqlite-database?module_item_id=1583304
     public void onLoaderReset(@NonNull Loader<Cursor> loader) {
         // TODO reset the UI when the cursor is empty
-
+        messagesAdapter.swapCursor(null);
     }
 
     /*
@@ -293,6 +318,8 @@ public class ChatServerActivity extends FragmentActivity implements OnClickListe
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
         // TODO inflate a menu with PEERS option
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.chatserver_menu, menu);
 
 
         return true;
@@ -305,11 +332,16 @@ public class ChatServerActivity extends FragmentActivity implements OnClickListe
         if (itemId == R.id.peers) {
             // TODO PEERS provide the UI for viewing list of peers
             // The subactivity will query the database for the list of peers.
+            Intent i = new Intent(this, ViewPeersActivity.class );
+            startActivity(i);
+
 
 
 
         }
         return false;
     }
+
+
 
 }
